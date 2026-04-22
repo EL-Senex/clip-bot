@@ -8,7 +8,6 @@ const PORT = process.env.PORT || 3000;
 const API_KEY = process.env.YOUTUBE_API_KEY;
 const DISCORD_WEBHOOK = process.env.DISCORD_WEBHOOK;
 
-// 🧠 Format seconds → HH:MM:SS
 function formatTime(seconds) {
   const hrs = Math.floor(seconds / 3600);
   const mins = Math.floor((seconds % 3600) / 60);
@@ -22,7 +21,6 @@ function formatTime(seconds) {
     .filter(v => v !== null)
     .join(":");
 }
-
 
 async function getLiveVideoDetails(channelId) {
   const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&eventType=live&type=video&key=${API_KEY}`;
@@ -48,26 +46,24 @@ async function getLiveVideoDetails(channelId) {
   return { videoId, startTime };
 }
 
-// 🎬 Clip endpoint
 app.get("/clip", async (req, res) => {
   const channelId = req.query.channelId;
   const user = req.query.user || "Someone";
   const title = decodeURIComponent(req.query.title || "a moment");
 
   if (!channelId) {
-    return res.send("❌ Missing channelId");
+    return res.send("Missing channelId");
   }
 
   try {
     const data = await getLiveVideoDetails(channelId);
 
     if (!data) {
-      return res.send("❌ No live stream found");
+      return res.send("No live stream found");
     }
 
     const now = Date.now();
 
-    
     const seconds = Math.max(
       0,
       Math.floor((now - data.startTime) / 1000) - 30
@@ -77,46 +73,33 @@ app.get("/clip", async (req, res) => {
 
     const clipLink = `https://youtube.com/watch?v=${data.videoId}&t=${seconds}s`;
 
-    console.log("🎬 Clip:", clipLink);
+    await axios.post(DISCORD_WEBHOOK, {
+      embeds: [
+        {
+          title: `🎬 ${title}`,
+          description: `▶ **[Watch from ${formattedTime}](${clipLink})**\n👤 Clipped by **${user}**`,
+          color: 0xff0000,
+          image: {
+            url: `https://img.youtube.com/vi/${data.videoId}/maxresdefault.jpg`
+          },
+          footer: {
+            text: "BiggPoppas Clip Bot"
+          },
+          timestamp: new Date()
+        }
+      ]
+    });
 
-    // 💬 Discord Embed (PRO UI)
-   await axios.post(DISCORD_WEBHOOK, {
-  embeds: [
-    {
-      title: `🎬 ${title}`, // clip name at top
-
-      description: 
-`▶ **[Watch from ${formattedTime}](${clipLink})**
-👤 Clipped by **${user}**`,
-
-      color: 0xff0000,
-
-      // ✅ THIS MAKES IMAGE BIG & CENTER
-      image: {
-        url: `https://img.youtube.com/vi/${data.videoId}/maxresdefault.jpg`
-      },
-
-      footer: {
-        text: "BiggPoppas Clip Bot 🚀"
-      },
-
-      timestamp: new Date()
-    }
-  ]
-});
-    res.send(`🔥 ${user} clipped "${title}" Clip sent to discord ✅`);
-
+    res.send(`🔥 ${user} clipped "${title}"`);
   } catch (err) {
-    console.error("ERROR:", err.response?.data || err.message);
-    res.send("❌ Error creating clip");
+    res.send("Error creating clip");
   }
 });
 
-// health check
 app.get("/", (req, res) => {
-  res.send("🚀 Clip Bot Running");
+  res.send("Clip Bot Running");
 });
 
 app.listen(PORT, () => {
-  console.log(`🔥 Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
