@@ -51,6 +51,9 @@ async function getLiveVideoDetails(channelId) {
 app.get("/clip", async (req, res) => {
   const channelId = req.query.channelId;
 
+   const user = req.query.user || "Someone";
+  const title = decodeURIComponent(req.query.title || "a moment");
+
   if (!channelId) {
     return res.send("❌ Missing channelId");
   }
@@ -76,18 +79,33 @@ app.get("/clip", async (req, res) => {
 
     // 💬 Send to Discord
     await axios.post(DISCORD_WEBHOOK, {
-      embeds: [
+  embeds: [
+    {
+      title: "🎬 New Clip Created!",
+      description: `🔥 **${user}** clipped:\n> "${title}"\n\n▶ [Watch Clip](${clipLink})`,
+      color: 16711680,
+      thumbnail: {
+        url: `https://img.youtube.com/vi/${data.videoId}/hqdefault.jpg`
+      },
+      fields: [
         {
-          title: "🎬 New Clip Created",
-          description: `[▶ Watch Clip](${clipLink})`,
-          color: 16711680,
-          footer: {
-            text: `Channel: ${channelId}`
-          }
+          name: "⏱ Timestamp",
+          value: `${seconds}s`,
+          inline: true
+        },
+        {
+          name: "📺 Channel",
+          value: channelId,
+          inline: true
         }
-      ]
-    });
-
+      ],
+      footer: {
+        text: "BiggPoppas Clip Bot 🚀"
+      },
+      timestamp: new Date()
+    }
+  ]
+});
     res.send("✅ Clip sent to Discord!");
 
   } catch (err) {
