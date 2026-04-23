@@ -88,7 +88,7 @@ app.get("/clip", async (req, res) => {
       ]
     });
 
-    res.send(`🔥 ${user} clipped "${title}"`);
+    res.send(`🔥 ${user} clipped "${title}" clip sent to discord ✅`);
 
   } catch (err) {
     console.error(err);
