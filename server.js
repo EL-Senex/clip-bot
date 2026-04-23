@@ -8,6 +8,7 @@ const PORT = process.env.PORT || 3000;
 const API_KEY = process.env.YOUTUBE_API_KEY;
 const DISCORD_WEBHOOK = process.env.DISCORD_WEBHOOK;
 
+// 🧠 Convert seconds → HH:MM:SS
 function formatTime(seconds) {
   const hrs = Math.floor(seconds / 3600);
   const mins = Math.floor((seconds % 3600) / 60);
@@ -22,6 +23,7 @@ function formatTime(seconds) {
     .join(":");
 }
 
+// 🎥 Get live video + start time
 async function getLiveVideoDetails(channelId) {
   const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&eventType=live&type=video&key=${API_KEY}`;
   const searchRes = await axios.get(searchUrl);
@@ -46,21 +48,17 @@ async function getLiveVideoDetails(channelId) {
   return { videoId, startTime };
 }
 
+// 🎬 CLIP ROUTE
 app.get("/clip", async (req, res) => {
   const channelId = req.query.channelId;
   const user = req.query.user || "Someone";
   const title = decodeURIComponent(req.query.title || "a moment");
 
-  if (!channelId) {
-    return res.send("Missing channelId");
-  }
+  if (!channelId) return res.send("Missing channelId");
 
   try {
     const data = await getLiveVideoDetails(channelId);
-
-    if (!data) {
-      return res.send("No live stream found");
-    }
+    if (!data) return res.send("No live stream found");
 
     const now = Date.now();
 
@@ -83,7 +81,7 @@ app.get("/clip", async (req, res) => {
             url: `https://img.youtube.com/vi/${data.videoId}/maxresdefault.jpg`
           },
           footer: {
-            text: "BiggPoppas Clip Bot"
+            text: "BiggPoppas Clip Bot 🚀"
           },
           timestamp: new Date()
         }
@@ -91,15 +89,42 @@ app.get("/clip", async (req, res) => {
     });
 
     res.send(`🔥 ${user} clipped "${title}"`);
+
   } catch (err) {
+    console.error(err);
     res.send("Error creating clip");
   }
 });
 
-app.get("/", (req, res) => {
-  res.send("Clip Bot Running");
+// ⏱️ UPTIME ROUTE
+app.get("/uptime", async (req, res) => {
+  const channelId = req.query.channelId;
+
+  if (!channelId) return res.send("Missing channelId");
+
+  try {
+    const data = await getLiveVideoDetails(channelId);
+
+    if (!data) return res.send("🔴 Stream is offline");
+
+    const now = Date.now();
+    const seconds = Math.floor((now - data.startTime) / 1000);
+    const formattedTime = formatTime(seconds);
+
+    res.send(`⏱️ Stream live for ${formattedTime}`);
+
+  } catch (err) {
+    res.send("Error fetching uptime");
+  }
 });
 
+// 🔥 WAKE / HEALTH CHECK
+app.get("/", (req, res) => {
+  console.log("📡 Ping received at", new Date());
+  res.send("🔥 Server is awake and ready!");
+});
+
+// 🚀 START SERVER
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🔥 Server running on port ${PORT}`);
 });
