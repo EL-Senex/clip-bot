@@ -78,7 +78,7 @@ app.get("/clip", async (req, res) => {
           description: `▶ **[Watch from ${formattedTime}](${clipLink})**\n👤 Clipped by **${user}**`,
           color: 0xff0000,
           image: {
-            url: `https://img.youtube.com/vi/${data.videoId}/maxresdefault.jpg`
+              url: `https://img.youtube.com/vi/${data.videoId}/hqdefault.jpg`
           },
           footer: {
             text: "BiggPoppas Clip Bot 🚀"
